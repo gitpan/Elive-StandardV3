@@ -39,6 +39,7 @@ t/soap-errors.t
 t/soap-multimedia-lwp.t
 t/soap-multimedia.t
 t/soap-presentation.t
+t/soap-recording.t
 t/soap-session-recurring.t
 t/soap-session-telephony.t
 t/soap-session.t
