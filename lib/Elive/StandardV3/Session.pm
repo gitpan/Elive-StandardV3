@@ -15,6 +15,7 @@ use Elive::StandardV3::SessionAttendance;
 use Elive::StandardV3::SessionTelephony;
 use Elive::StandardV3::Multimedia;
 use Elive::StandardV3::Presentation;
+use Elive::StandardV3::Recording;
 
 =head1 NAME
 
@@ -39,6 +40,7 @@ __PACKAGE__->params(
     sessionId => 'Int',
     recurrenceCount => 'Int',
     recurrenceDays => 'Int',
+    apiCallbackUrl => 'Str',
     );
 
 
@@ -750,6 +752,25 @@ sub remove_multimedia {
 
 }
 			      
+=head2 list_recordings
+
+    my $recordings = $meeting_obj->list_recordings;
+
+Lists all recording associated with the session.
+
+See also L<Elive::StandardV3::Recording>.
+
+=cut
+
+sub list_recordings {
+    my ($self, @args) = @_;
+
+    return Elive::StandardV3::Recording
+        ->list({sessionId => $self->sessionId},
+	       connection => $self->connection,
+	       @args);
+}
+
 =head2 session_url
 
     my $session_url = $session->session_url(userId => 'bob');
@@ -797,6 +818,51 @@ sub session_url {
     my $url = @$results && $results->[0];
 
     return $url;
+}
+
+=head2 set_api_callback_url
+
+    my $session_url = $session->session_url($url);
+
+This method calls the C< SetApiCallbackUrl> command, which is used to specify a
+callback URL that will be notified every time a room closes.
+
+If a session is launched multiple times, there will be multiple rooms
+(instances of the session). When each room closes, the callback URL will be
+called. If the session is only launched once, the URL will be called once.
+
+=cut
+
+sub set_api_callback_url {
+    my ($class, $url, %opt) = @_;
+
+    my $connection = $opt{connection} || $class->connection
+	or croak "Not connected";
+
+    my $session_id = $opt{sessionId};
+
+    $session_id ||= $class->sessionId
+	if ref($class);
+
+    croak "unable to determine sessionId"
+	unless $session_id;
+
+    my %params;
+    $params{sessionId} = $session_id;
+    $params{apiCallbackUrl} = $url;
+
+    my $command = $opt{command} || 'SetApiCallbackUrl';
+
+    my $som = $connection->call($command => %{ $class->_freeze(\%params) });
+
+    my $results = $class->_get_results(
+	$som,
+	$connection,
+	);
+
+    my $success = @$results && $results->[0];
+
+    return $success;
 }
 
 =head2 attendance
